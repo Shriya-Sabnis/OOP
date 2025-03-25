@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fashion Bot</title>
+</head>
+<body>
+    <h2>Ask for Fashion Advice</h2>
+    <form id="fashionForm">
+        <input type="text" id="user_query" name="user_query" placeholder="Enter your fashion question" required>
+        <button type="submit">Get Advice</button>
+    </form>
+    <h3>Advice:</h3>
+    <p id="response"></p>
+
+    <script>
+        document.getElementById("fashionForm").onsubmit = async function(event) {
+            event.preventDefault();
+            const query = document.getElementById("user_query").value;
+            const response = await fetch("/", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ "user_query": query })
+            }).then(res => res.json());
+
+            document.getElementById("response").innerText = response.response;
+        };
+    </script>
+</body>
+</html>
