@@ -1,0 +1,70 @@
+from flask import Flask, render_template, request, jsonify
+import google.generativeai as genai
+
+# Initialize Flask app
+app = Flask(__name__)
+
+# Set your Gemini API key
+GEMINI_API_KEY = "AIzaSyDcSxdqshP-YfkIHHaWUtd4W-oy2vFVkQs"  # 🔹 Replace with your actual API key
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Select the best available model
+def get_best_model():
+    """Fetch available models and select the most suitable Gemini model."""
+    try:
+        models = genai.list_models()
+        available_models = [model.name for model in models]
+
+        # Prioritizing the best available models
+        preferred_models = [
+            "models/gemini-1.5-pro-latest",
+            "models/gemini-1.5-flash-latest"
+        ]
+
+        for model in preferred_models:
+            if model in available_models:
+                return model
+
+        return available_models[0] if available_models else None
+    except:
+        return None
+
+MODEL_NAME = get_best_model()
+if not MODEL_NAME:
+    raise ValueError("❌ No valid Gemini model found. Check your API key permissions.")
+
+# Route for home page
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+# Route to handle chatbot interaction
+@app.route("/get_advice", methods=["POST"])
+def get_advice():
+    user_query = request.json.get("query", "").strip()
+    body_shape = request.json.get("body_shape", "").strip().lower()
+    face_shape = request.json.get("face_shape", "").strip().lower()
+    skin_tone = request.json.get("skin_tone", "").strip().lower()
+
+    # Constructing a concise and relevant prompt
+    prompt = f"""
+    You are a fashion expert. Give short and practical outfit recommendations based on:
+    - Body shape: {body_shape}
+    - Face shape: {face_shape}
+    - Skin tone: {skin_tone}
+
+    Question: {user_query}
+    
+    Keep your response **short** (1-2 sentences) and avoid repeating generic advice.
+    """
+
+    try:
+        model = genai.GenerativeModel(MODEL_NAME)
+        response = model.generate_content(prompt)
+        return jsonify({"response": response.text.strip()})
+    except Exception as e:
+        return jsonify({"response": f"❌ Error: {e}"})
+
+# Run the Flask app
+if __name__ == "__main__":
+    app.run(debug=True)
